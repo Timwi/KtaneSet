@@ -17,13 +17,21 @@ public class SetModule : MonoBehaviour
     public KMAudio Audio;
 
     public Texture[] Symbols;
+    public Texture[] SymbolsSelected;
     public KMSelectable[] Cards;
     public KMSelectable MainSelectable;
+    public Material CardSelected;
+    public Material CardUnselected;
 
     private MeshRenderer[] _cardImages;
+    private MeshRenderer[] _cardSelections;
 
     private static int _moduleIdCounter = 1;
     private int _moduleId;
+    private List<int> _selected = new List<int>();
+    private SetSet _solution;
+    private SetCard[] _displayedCards;
+    private bool _isSolved;
 
     struct SetCard : IEquatable<SetCard>
     {
@@ -81,16 +89,22 @@ public class SetModule : MonoBehaviour
 
         // The textures are in random order and I couldn’t be bothered to fix it in Unity.
         Symbols = Enumerable.Range(0, 81).Select(ix => Symbols.FirstOrDefault(sy => sy.name == string.Format("Icon{0}{1}{2}{3}", (char) ('A' + (ix % 3)), (char) ('1' + ((ix / 3) % 3)), (char) ('a' + ((ix / 9) % 3)), (char) ('1' + ((ix / 27) % 3))))).ToArray();
+        SymbolsSelected = Enumerable.Range(0, 81).Select(ix => SymbolsSelected.FirstOrDefault(sy => sy.name == string.Format("IconSel{0}{1}{2}{3}", (char) ('A' + (ix % 3)), (char) ('1' + ((ix / 3) % 3)), (char) ('a' + ((ix / 9) % 3)), (char) ('1' + ((ix / 27) % 3))))).ToArray();
 
         _cardImages = new MeshRenderer[Cards.Length];
+        _cardSelections = new MeshRenderer[Cards.Length];
         for (int i = 0; i < Cards.Length; i++)
+        {
             _cardImages[i] = Cards[i].transform.FindChild("CardImage").GetComponent<MeshRenderer>();
+            _cardSelections[i] = Cards[i].transform.FindChild("CardSelection").GetComponent<MeshRenderer>();
+            Cards[i].OnInteract = getClickHandler(i);
+        }
 
         tryAgain:
-        var solution = SetSet.GetRandom(avoidSameSymbol: true);
-        var cards = new HashSet<SetCard> { solution.One, solution.Two, solution.Three };
+        _solution = SetSet.GetRandom(avoidSameSymbol: true);
+        var cards = new HashSet<SetCard> { _solution.One, _solution.Two, _solution.Three };
         var iter = 0;
-        while (cards.Count < 12)
+        while (cards.Count < 9)
         {
             var newCard = SetCard.GetRandom();
             if (cards.Contains(newCard) || cards.Any(c => cards.Contains(newCard.Get3rdInSet(c))))
@@ -103,15 +117,64 @@ public class SetModule : MonoBehaviour
             cards.Add(newCard);
         }
 
-        var cardsOrdered = cards.ToList().Shuffle();
-        for (int i = 0; i < cardsOrdered.Count; i++)
-            _cardImages[i].material.mainTexture = Symbols[cardsOrdered[i].Index];
+        _displayedCards = cards.ToList().Shuffle().ToArray();
+        for (int i = 0; i < _displayedCards.Length; i++)
+            _cardImages[i].material.mainTexture = Symbols[_displayedCards[i].Index];
 
-        Debug.LogFormat("Solution: {0}, {1}, {2}", cardsOrdered.IndexOf(solution.One), cardsOrdered.IndexOf(solution.Two), cardsOrdered.IndexOf(solution.Three));
+        Debug.LogFormat("[S.E.T. #{0}] Solution: {1}, {2}, {3}.",
+            _moduleId, coords(Array.IndexOf(_displayedCards, _solution.One)), coords(Array.IndexOf(_displayedCards, _solution.Two)), coords(Array.IndexOf(_displayedCards, _solution.Three)));
     }
 
-    private static IEnumerable<int> GetRandomDimensionValues()
+    private string coords(int i)
     {
-        return (Rnd.Range(0, 2) == 0 ? Enumerable.Repeat(Rnd.Range(0, 3), 3) : Enumerable.Range(0, 3).ToList().Shuffle());
+        return (char) ('A' + i % 3) + "" + (char) ('1' + i / 3);
+    }
+
+    private KMSelectable.OnInteractHandler getClickHandler(int i)
+    {
+        return delegate
+        {
+            Cards[i].AddInteractionPunch();
+
+            if (_isSolved)
+            {
+                Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, Cards[i].transform);
+                return false;
+            }
+
+            if (_selected.Contains(i))
+            {
+                Audio.PlaySoundAtTransform("Deselect", Cards[i].transform);
+                //_cardSelections[i].material = CardUnselected;
+                _cardImages[i].material.mainTexture = Symbols[_displayedCards[i].Index];
+                _selected.Remove(i);
+            }
+            else
+            {
+                _selected.Add(i);
+                if (_selected.Count == 3 && _selected.All(s => _solution.Cards.Contains(_displayedCards[s])))
+                {
+                    Debug.LogFormat("[S.E.T. #{0}] Module solved.", _moduleId);
+                    Module.HandlePass();
+                    //_cardSelections[i].material = CardSelected;
+                    _cardImages[i].material.mainTexture = SymbolsSelected[_displayedCards[i].Index];
+                    _isSolved = true;
+                    Audio.PlaySoundAtTransform("Chime", Cards[i].transform);
+                }
+                else if (_selected.Count == 3)
+                {
+                    Debug.LogFormat("[S.E.T. #{0}] Incorrect set selected: {1}, {2}, {3}.", _moduleId, coords(_selected[0]), coords(_selected[1]), coords(_selected[2]));
+                    Module.HandleStrike();
+                    _selected.Remove(i);
+                }
+                else
+                {
+                    //_cardSelections[i].material = CardSelected;
+                    _cardImages[i].material.mainTexture = SymbolsSelected[_displayedCards[i].Index];
+                    Audio.PlaySoundAtTransform("Stamp", Cards[i].transform);
+                }
+            }
+            return false;
+        };
     }
 }
