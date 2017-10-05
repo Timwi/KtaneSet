@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Set;
 using UnityEngine;
 
@@ -118,8 +119,15 @@ public class SetModule : MonoBehaviour
         }
 
         _displayedCards = cards.ToList().Shuffle().ToArray();
+        var fillings = new[] { "filled", "wavy", "empty" };
         for (int i = 0; i < _displayedCards.Length; i++)
+        {
+            Debug.LogFormat("[S.E.T. #{0}] Icon at (module) {1}{2} is (manual) {3}{4}, {5}, {6} dots.", _moduleId,
+                (char) ('A' + i % 3), (char) ('1' + i / 3),
+                (char) ('A' + _displayedCards[i].X), (char) ('1' + _displayedCards[i].Y),
+                fillings[_displayedCards[i].Filling], _displayedCards[i].NumDots);
             _cardImages[i].material.mainTexture = Symbols[_displayedCards[i].Index];
+        }
 
         Debug.LogFormat("[S.E.T. #{0}] Solution: {1}, {2}, {3}.",
             _moduleId, coords(Array.IndexOf(_displayedCards, _solution.One)), coords(Array.IndexOf(_displayedCards, _solution.Two)), coords(Array.IndexOf(_displayedCards, _solution.Three)));
@@ -176,5 +184,23 @@ public class SetModule : MonoBehaviour
             }
             return false;
         };
+    }
+
+    public string TwitchHelpMessage = @"Use “!{0} press a1 a2” to press any number of buttons in that order, using a–c for columns and 1–3 for rows, or “!{0} press tm br” (top middle, bottom right).";
+
+    private KMSelectable[] ProcessTwitchCommand(string command)
+    {
+        command = command.ToLowerInvariant();
+        var m = Regex.Match(command, @"^(?:press|submit|select|toggle|push)((?: +([abc][123]|[lcrtmb][lcrtmb]))+) *$");
+        if (!m.Success)
+            return null;
+        return m.Groups[1].Value.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(str =>
+        {
+            if (str[0] >= 'a' && str[0] <= 'c' && str[1] >= '1' && str[1] <= '3')
+                return Cards[(str[0] - 'a') + 3 * (str[1] - '1')];
+            var x = str.Contains('l') ? 0 : str.Contains('r') ? 2 : 1;
+            var y = str.Contains('t') ? 0 : str.Contains('b') ? 2 : 1;
+            return Cards[x + 3 * y];
+        }).ToArray();
     }
 }
