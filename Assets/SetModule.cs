@@ -21,8 +21,6 @@ public class SetModule : MonoBehaviour
     public Texture[] SymbolsSelected;
     public KMSelectable[] Cards;
     public KMSelectable MainSelectable;
-    public Material CardSelected;
-    public Material CardUnselected;
 
     private MeshRenderer[] _cardImages;
     private MeshRenderer[] _cardSelections;
@@ -96,8 +94,8 @@ public class SetModule : MonoBehaviour
         _cardSelections = new MeshRenderer[Cards.Length];
         for (int i = 0; i < Cards.Length; i++)
         {
-            _cardImages[i] = Cards[i].transform.FindChild("CardImage").GetComponent<MeshRenderer>();
-            _cardSelections[i] = Cards[i].transform.FindChild("CardSelection").GetComponent<MeshRenderer>();
+            _cardImages[i] = Cards[i].transform.Find("CardImage").GetComponent<MeshRenderer>();
+            _cardSelections[i] = Cards[i].transform.Find("CardSelection").GetComponent<MeshRenderer>();
             Cards[i].OnInteract = getClickHandler(i);
         }
 
@@ -186,7 +184,10 @@ public class SetModule : MonoBehaviour
         };
     }
 
-    public string TwitchHelpMessage = @"Use “!{0} press a1 a2” to press any number of buttons in that order, using a–c for columns and 1–3 for rows, or “!{0} press tm br” (top middle, bottom right).";
+#pragma warning disable 414
+    private string TwitchHelpMessage = @"Use “!{0} press a1 a2” to press any number of buttons in that order, using a–c for columns and 1–3 for rows, or “!{0} press tm br” (top middle, bottom right).";
+#pragma warning restore 414
+
 
     private KMSelectable[] ProcessTwitchCommand(string command)
     {

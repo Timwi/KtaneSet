@@ -13,5 +13,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: Set
   title: S.E.T.
+  description: 'Strangely Elusive Triplets.
+
+
+    Module created by Timwi.
+
+
+    [url=http://ktane.timwi.de/PDF/S.E.T..pdf]Manual PDF[/url]
+
+    [url=http://ktane.timwi.de/HTML/S.E.T..html]Manual HTML[/url]'
   version: 1.0
   outputFolder: build
+  previewImage: {fileID: 2800000, guid: a8f2ba305888e724bbd5ac9a05fc466e, type: 3}
