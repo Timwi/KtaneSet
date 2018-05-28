@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -70,7 +71,7 @@ public class FakeBombInfo : MonoBehaviour
         {
             if (key == KMBombInfo.QUERYKEY_GET_PORTS)
             {
-                return JsonConvert.SerializeObject((object)new Dictionary<string, List<string>>()
+                return JsonConvert.SerializeObject((object) new Dictionary<string, List<string>>()
                 {
                     {
                         "presentPorts", ports
@@ -107,7 +108,7 @@ public class FakeBombInfo : MonoBehaviour
         {
             if (key == KMBombInfo.QUERYKEY_GET_INDICATOR)
             {
-                return JsonConvert.SerializeObject((object)new Dictionary<string, string>()
+                return JsonConvert.SerializeObject((object) new Dictionary<string, string>()
                 {
                     {
                         "label", val
@@ -136,7 +137,7 @@ public class FakeBombInfo : MonoBehaviour
         {
             if (key == KMBombInfo.QUERYKEY_GET_BATTERIES)
             {
-                return JsonConvert.SerializeObject((object)new Dictionary<string, int>()
+                return JsonConvert.SerializeObject((object) new Dictionary<string, int>()
                 {
                     {
                         "numbatteries", batt
@@ -228,18 +229,18 @@ public class FakeBombInfo : MonoBehaviour
         if (timeLeft < 60)
         {
             if (timeLeft < 10) time += "0";
-            time += (int)timeLeft;
+            time += (int) timeLeft;
             time += ".";
-            int s = (int)(timeLeft * 100);
+            int s = (int) (timeLeft * 100);
             if (s < 10) time += "0";
             time += s;
         }
         else
         {
             if (timeLeft < 600) time += "0";
-            time += (int)timeLeft / 60;
+            time += (int) timeLeft / 60;
             time += ":";
-            int s = (int)timeLeft % 60;
+            int s = (int) timeLeft % 60;
             if (s < 10) time += "0";
             time += s;
         }
@@ -283,7 +284,7 @@ public class FakeBombInfo : MonoBehaviour
         List<string> moduleList = new List<string>();
         foreach (KeyValuePair<KMBombModule, bool> m in modules)
         {
-            if(m.Value) moduleList.Add(m.Key.ModuleDisplayName);
+            if (m.Value) moduleList.Add(m.Key.ModuleDisplayName);
         }
         return moduleList;
     }
@@ -293,7 +294,7 @@ public class FakeBombInfo : MonoBehaviour
         List<string> responses = new List<string>();
         if (queryKey == KMBombInfo.QUERYKEY_GET_SERIAL_NUMBER)
         {
-            responses.Add(JsonConvert.SerializeObject((object)new Dictionary<string, string>()
+            responses.Add(JsonConvert.SerializeObject((object) new Dictionary<string, string>()
             {
                 {
                     "serial", serial
@@ -374,7 +375,7 @@ public class TestHarness : MonoBehaviour
         PrepareLights();
 
         fakeInfo = gameObject.AddComponent<FakeBombInfo>();
-        fakeInfo.ActivateLights += delegate()
+        fakeInfo.ActivateLights += delegate ()
         {
             TurnLightsOn();
             fakeInfo.OnLightsOn();
@@ -396,7 +397,7 @@ public class TestHarness : MonoBehaviour
             {
                 if (f.FieldType.Equals(typeof(KMBombInfo)))
                 {
-                    KMBombInfo component = (KMBombInfo)f.GetValue(s);
+                    KMBombInfo component = (KMBombInfo) f.GetValue(s);
                     component.TimeHandler += new KMBombInfo.GetTimeHandler(fakeInfo.GetTime);
                     component.FormattedTimeHandler += new KMBombInfo.GetFormattedTimeHandler(fakeInfo.GetFormattedTime);
                     component.StrikesHandler += new KMBombInfo.GetStrikesHandler(fakeInfo.GetStrikes);
@@ -409,14 +410,14 @@ public class TestHarness : MonoBehaviour
                 }
                 if (f.FieldType.Equals(typeof(KMGameInfo)))
                 {
-                    KMGameInfo component = (KMGameInfo)f.GetValue(s);
+                    KMGameInfo component = (KMGameInfo) f.GetValue(s);
                     component.OnLightsChange += new KMGameInfo.KMLightsChangeDelegate(fakeInfo.OnLights);
                     //component.OnAlarmClockChange += new KMGameInfo.KMAlarmClockChangeDelegate(fakeInfo.OnAlarm);
                     continue;
                 }
                 if (f.FieldType.Equals(typeof(KMGameCommands)))
                 {
-                    KMGameCommands component = (KMGameCommands)f.GetValue(s);
+                    KMGameCommands component = (KMGameCommands) f.GetValue(s);
                     component.OnCauseStrike += new KMGameCommands.KMCauseStrikeDelegate(fakeInfo.HandleStrike);
                     continue;
                 }
@@ -434,10 +435,9 @@ public class TestHarness : MonoBehaviour
             {
                 if (f.FieldType.Equals(typeof(KMBombInfo)))
                 {
-                    KMBombInfo component = (KMBombInfo)f.GetValue(s);
-                    if (component.OnBombExploded != null) fakeInfo.Detonate += new FakeBombInfo.OnDetonate(component.OnBombExploded);
-                    if (component.OnBombSolved != null) fakeInfo.HandleSolved += new FakeBombInfo.OnSolved(component.OnBombSolved);
-                    continue;
+                    KMBombInfo component = (KMBombInfo) f.GetValue(s);
+                    fakeInfo.Detonate += delegate { if (component.OnBombExploded != null) component.OnBombExploded(); };
+                    fakeInfo.HandleSolved += delegate { if (component.OnBombSolved != null) component.OnBombSolved(); };
                 }
             }
         }
@@ -456,7 +456,8 @@ public class TestHarness : MonoBehaviour
             modules[i].GetComponent<TestSelectable>().Parent = currentSelectable;
 
             fakeInfo.modules.Add(new KeyValuePair<KMBombModule, bool>(modules[i], false));
-            modules[i].OnPass = delegate () {
+            modules[i].OnPass = delegate ()
+            {
                 Debug.Log("Module Passed");
                 fakeInfo.modules.Remove(fakeInfo.modules.First(t => t.Key.Equals(mod)));
                 fakeInfo.modules.Add(new KeyValuePair<KMBombModule, bool>(mod, true));
@@ -472,7 +473,8 @@ public class TestHarness : MonoBehaviour
                 if (allSolved) fakeInfo.Solved();
                 return false;
             };
-            modules[i].OnStrike = delegate () {
+            modules[i].OnStrike = delegate ()
+            {
                 Debug.Log("Strike");
                 fakeInfo.HandleStrike();
                 return false;
@@ -509,16 +511,15 @@ public class TestHarness : MonoBehaviour
 
     protected void PlaySoundHandler(string clipName, Transform t)
     {
-        if (AudioClips != null && AudioClips.Count > 0)
-        {
-            AudioClip clip = AudioClips.Where(a => a.name == clipName).First();
+        AudioClip clip = AudioClips == null ? null : AudioClips.Where(a => a.name == clipName).FirstOrDefault();
 
-            if (clip != null)
-            {
-                audioSource.transform.position = t.position;
-                audioSource.PlayOneShot(clip);
-            }
+        if (clip != null)
+        {
+            audioSource.transform.position = t.position;
+            audioSource.PlayOneShot(clip);
         }
+        else
+            Debug.Log("Audio clip not found: " + clipName);
     }
 
     void Update()
@@ -647,14 +648,15 @@ public class TestHarness : MonoBehaviour
     IEnumerator SimulateModule(Component component, Transform moduleTransform, MethodInfo method, string command)
     {
         // Simple Command
-        if (method.ReturnType == typeof(KMSelectable[]))
+        if (typeof(IEnumerable<KMSelectable>).IsAssignableFrom(method.ReturnType))
         {
-            KMSelectable[] selectableSequence = null;
+            IEnumerable<KMSelectable> selectableSequence = null;
             try
             {
-                selectableSequence = (KMSelectable[]) method.Invoke(component, new object[] { command });
+                selectableSequence = (IEnumerable<KMSelectable>) method.Invoke(component, new object[] { command });
                 if (selectableSequence == null)
                 {
+                    Debug.LogFormat("Twitch Plays handler reports invalid command (by returning null).", method.DeclaringType.FullName, method.Name);
                     yield break;
                 }
             }
@@ -696,7 +698,10 @@ public class TestHarness : MonoBehaviour
             }
 
             if (responseCoroutine == null)
+            {
+                Debug.LogFormat("Twitch Plays handler reports invalid command (by returning null).", method.DeclaringType.FullName, method.Name);
                 yield break;
+            }
 
             if (!ComponentHelds.ContainsKey(component))
                 ComponentHelds[component] = new HashSet<KMSelectable>();
@@ -704,6 +709,20 @@ public class TestHarness : MonoBehaviour
 
             int initialStrikes = fakeInfo.strikes;
             int initialSolved = fakeInfo.GetSolvedModuleNames().Count;
+
+            if (!responseCoroutine.MoveNext())
+            {
+                Debug.LogFormat("Twitch Plays handler reports invalid command (by returning empty sequence).", method.DeclaringType.FullName, method.Name);
+                yield break;
+            }
+
+            if (responseCoroutine.Current is string)
+            {
+                var str = (string) responseCoroutine.Current;
+                if (str.StartsWith("sendtochat"))
+                    Debug.Log("Twitch handler sent: " + str);
+                yield break;
+            }
 
             while (responseCoroutine.MoveNext())
             {
@@ -724,8 +743,25 @@ public class TestHarness : MonoBehaviour
                         heldSelectables.Add(selectable);
                     }
                 }
+                else if (currentObject is IEnumerable<KMSelectable>)
+                {
+                    foreach (var selectable in (IEnumerable<KMSelectable>) currentObject)
+                    {
+                        DoInteractionStart(selectable);
+                        yield return new WaitForSeconds(.1f);
+                        DoInteractionEnd(selectable);
+                    }
+                }
                 else if (currentObject is string)
                 {
+                    string currentString = (string) currentObject;
+                    float waitTime;
+                    Match match = Regex.Match(currentString, "^trywaitcancel ([0-9]+(?:\\.[0-9])?)((?: (?:.|\\n)+)?)$", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+                    if (match.Success && float.TryParse(match.Groups[1].Value, out waitTime))
+                    {
+                        yield return new WaitForSeconds(waitTime);
+                    }
+
                     Debug.Log("Twitch handler sent: " + currentObject);
                     yield return currentObject;
                 }
@@ -797,10 +833,7 @@ public class TestHarness : MonoBehaviour
                     MethodInfo method = type.GetMethod("ProcessTwitchCommand", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
                     if (method != null)
-                    {
-                        Debug.LogFormat("<> method: {0}", method);
                         StartCoroutine(SimulateModule(component, module.transform, method, command));
-                    }
                 }
             }
             command = "";

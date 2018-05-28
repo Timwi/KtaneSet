@@ -185,9 +185,8 @@ public class SetModule : MonoBehaviour
     }
 
 #pragma warning disable 414
-    private string TwitchHelpMessage = @"Use “!{0} press a1 a2” to press any number of buttons in that order, using a–c for columns and 1–3 for rows, or “!{0} press tm br” (top middle, bottom right).";
+    private readonly string TwitchHelpMessage = @"Use “!{0} press a1 a2” to press any number of buttons in that order, using a–c for columns and 1–3 for rows, or “!{0} press tm br” (top middle, bottom right).";
 #pragma warning restore 414
-
 
     private KMSelectable[] ProcessTwitchCommand(string command)
     {
