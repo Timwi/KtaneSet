@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -202,5 +203,20 @@ public class SetModule : MonoBehaviour
             var y = str.Contains('t') ? 0 : str.Contains('b') ? 2 : 1;
             return Cards[x + 3 * y];
         }).ToArray();
+    }
+
+    IEnumerator TwitchHandleForcedSolve()
+    {
+        while (_selected.Count > 0)
+        {
+            Cards[_selected[0]].OnInteract();
+            yield return new WaitForSeconds(.1f);
+        }
+
+        foreach (var card in _solution.Cards)
+        {
+            Cards[Array.IndexOf(_displayedCards, card)].OnInteract();
+            yield return new WaitForSeconds(.1f);
+        }
     }
 }
