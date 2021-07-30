@@ -186,13 +186,13 @@ public class SetModule : MonoBehaviour
     }
 
 #pragma warning disable 414
-    private readonly string TwitchHelpMessage = @"Use “!{0} press a1 a2” to press any number of buttons in that order, using a–c for columns and 1–3 for rows, or “!{0} press tm br” (top middle, bottom right).";
+    private readonly string TwitchHelpMessage = @"press a1 a2 [press any number of buttons in that order; a–c is columns and 1–3 is rows] | !{0} press tm br";
 #pragma warning restore 414
 
     private KMSelectable[] ProcessTwitchCommand(string command)
     {
         command = command.ToLowerInvariant();
-        var m = Regex.Match(command, @"^(?:press|submit|select|toggle|push)((?: +([abc][123]|[lcrtmb][lcrtmb]))+) *$");
+        var m = Regex.Match(command + " ", @"^\s*(?:press\s|submit\s|select\s|toggle\s|push\s)?\s*((?:([abc][123]|[lcrtmb][lcrtmb])\s+)+)\s*$");
         if (!m.Success)
             return null;
         return m.Groups[1].Value.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(str =>
