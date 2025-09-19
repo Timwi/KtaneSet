@@ -13,6 +13,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: Set
   title: S.E.T.
+  author: Timwi
   description: 'Strangely Elusive Triplets.
 
 
